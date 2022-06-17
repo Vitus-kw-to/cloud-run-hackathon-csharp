@@ -42,6 +42,13 @@ app.MapPost("/", (ArenaUpdate model) =>
         return "T";
     }
 
+    // Priority 2, not lot of threats, no player in attack range
+    var bestPursueDirection = GetBestPursueDirection(self, model);
+    if (!String.IsNullOrEmpty(bestPursueDirection))
+    {
+        return bestPursueDirection;
+    }
+
     // Last Priority, random
     return new string[] { "F", "L", "R" }[Random.Shared.Next(0, 3)];
 });
@@ -224,7 +231,7 @@ List<PlayerState> GetPlayersInAttackRangeInDirection(PlayerState self, ArenaUpda
         case "W":
             return model.Arena.State.Where(p => p.Value.Y == self.Y && p.Value.X < self.X).Select(p => p.Value).ToList();
     }
-
+    return null;
 }
 
 string GetDirectionIfTurned(PlayerState self, string turnDirection)
