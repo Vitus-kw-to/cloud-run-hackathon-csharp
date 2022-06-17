@@ -7,16 +7,62 @@ var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
 app.MapGet("/", () => "Let the battle begin!");
 app.MapPost("/", (ArenaUpdate model) =>
 {
+    PlayerState self = GetSelf(model);
+
+    // Priority 0, lots of threats
+    List<PlayerState> threats = GetImmediateThreats(self, model);
+    if (threats.Count() >= 2)
+    {
+        List<int> nextPosFront = GetNextPos(self, model, self.Direction, out bool isWallFront, out bool isOccupiedFront);
+
+        if (!isWallFront && !isOccupiedFront)
+        {
+            // Move forward
+            return "F";
+        }
+        else
+        {
+            List<int> nextPosLeft = GetNextPos(self, model, GetDirectionIfTurned(self, "L"), out bool isWallLeft, out bool isOccupiedLeft);
+
+            if (!isWallLeft && !isOccupiedLeft)
+            {
+                return "L";
+            }
+            else
+            {
+                return "R";
+            }
+        }
+    }
+
+    // Priority 1, not lot of threats, have player in attack range
+    List<PlayerState> playersInAttackRange = GetAttackRangePlayers(self, model);
+    if (playersInAttackRange.Count > 0)
+    {
+        return "T";
+    }
+
+    // Priority 2, not lot of threats, no player in attack range
+    var bestPursueDirection = GetBestPursueDirection(self, model);
+    if (!String.IsNullOrEmpty(bestPursueDirection))
+    {
+        return bestPursueDirection;
+    }
+
     // Last Priority, random
-    return new string[] { "F", "L", "R" }[Random.Shared.Next(0, 2)];
+    return "F";
+    //return new string[] { "F", "L", "R" }[Random.Shared.Next(0, 2)];
 });
 
 app.Run($"http://0.0.0.0:{port}");
 
 string GetBestPursueDirection(PlayerState self, ArenaUpdate model)
 {
-    List<PlayerState> playersInAttackRightToTheLeft = GetPlayersInAttackRangeInDirection(self, model, "L");
-    List<PlayerState> playersInAttackRightToTheRight = GetPlayersInAttackRangeInDirection(self, model, "R");
+    var dirL = GetDirectionIfTurned(self, "L");
+    var dirR = GetDirectionIfTurned(self, "R");
+
+    List<PlayerState> playersInAttackRightToTheLeft = GetPlayersInDirection(self, model, dirL);
+    List<PlayerState> playersInAttackRightToTheRight = GetPlayersInDirection(self, model, dirR);
     if (playersInAttackRightToTheLeft.Count > 0 && playersInAttackRightToTheRight.Count > 0)
     {
         var turn = "L";
