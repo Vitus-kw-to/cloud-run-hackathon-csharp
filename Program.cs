@@ -42,13 +42,6 @@ app.MapPost("/", (ArenaUpdate model) =>
         return "T";
     }
 
-    // Priority 2, not lot of threats, no player in attack range
-    var bestPursueDirection = GetBestPursueDirection(self, model);
-    if (!String.IsNullOrEmpty(bestPursueDirection))
-    {
-        return bestPursueDirection;
-    }
-
     // Last Priority, random
     return new string[] { "F", "L", "R" }[Random.Shared.Next(0, 3)];
 });
@@ -57,8 +50,8 @@ app.Run($"http://0.0.0.0:{port}");
 
 string GetBestPursueDirection(PlayerState self, ArenaUpdate model)
 {
-    List<PlayerState> playersInAttackRightToTheLeft = GetPlayersInAttackRangeInDirection("L");
-    List<PlayerState> playersInAttackRightToTheRight = GetPlayersInAttackRangeInDirection("R");
+    List<PlayerState> playersInAttackRightToTheLeft = GetPlayersInAttackRangeInDirection(self, model, "L");
+    List<PlayerState> playersInAttackRightToTheRight = GetPlayersInAttackRangeInDirection(self, model, "R");
     if (playersInAttackRightToTheLeft.Count > 0 && playersInAttackRightToTheRight.Count > 0)
     {
         var turn = "L";
@@ -215,9 +208,23 @@ PlayerState GetClosetPlayer(PlayerState self, List<PlayerState> players)
     return closetPlayer;
 }
 
-List<PlayerState> GetPlayersInAttackRangeInDirection(string turnDirection)
+List<PlayerState> GetPlayersInAttackRangeInDirection(PlayerState self, ArenaUpdate model, string turnDirection)
 {
-    return null;
+    var dir = GetDirectionIfTurned(self, turnDirection);
+    var players = GetPlayersInDirection(self, model, dir);
+
+    switch (dir)
+    {
+        case "N":
+            return model.Arena.State.Where(p => p.Value.X == self.X && p.Value.Y < self.Y).Select(p => p.Value).ToList();
+        case "S":
+            return model.Arena.State.Where(p => p.Value.X == self.X && p.Value.Y > self.Y).Select(p => p.Value).ToList();
+        case "E":
+            return model.Arena.State.Where(p => p.Value.Y == self.Y && p.Value.X > self.X).Select(p => p.Value).ToList();
+        case "W":
+            return model.Arena.State.Where(p => p.Value.Y == self.Y && p.Value.X < self.X).Select(p => p.Value).ToList();
+    }
+
 }
 
 string GetDirectionIfTurned(PlayerState self, string turnDirection)
