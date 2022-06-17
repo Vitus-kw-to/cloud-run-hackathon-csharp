@@ -9,7 +9,7 @@ app.MapPost("/", (ArenaUpdate model) =>
 {
     PlayerState self = GetSelf(model);
 
-    // Priority 0
+    // Priority 0, lots of threats
     List<PlayerState> threats = GetImmediateThreats(self, model);
     if (threats.Count() >= 2)
     {
@@ -35,19 +35,190 @@ app.MapPost("/", (ArenaUpdate model) =>
         }
     }
 
-    // Priority 1
+    // Priority 1, not lot of threats, have player in attack range
     List<PlayerState> playersInAttackRange = GetAttackRangePlayers(self, model);
     if (playersInAttackRange.Count > 0)
     {
         return "T";
     }
 
+    // Priority 2, not lot of threats, no player in attack range
+    var bestPursueDirection = GetBestPursueDirection(self, model);
+    if (!String.IsNullOrEmpty(bestPursueDirection))
+    {
+        return bestPursueDirection;
+    }
 
-    // RANDOM?
-    return "F";
+    // Last Priority, random
+    return new string[] { "F", "L", "R" }[Random.Shared.Next(0, 3)];
 });
 
 app.Run($"http://0.0.0.0:{port}");
+
+string GetBestPursueDirection(PlayerState self, ArenaUpdate model)
+{
+    List<PlayerState> playersInAttackRightToTheLeft = GetPlayersInAttackRangeInDirection("L");
+    List<PlayerState> playersInAttackRightToTheRight = GetPlayersInAttackRangeInDirection("R");
+    if (playersInAttackRightToTheLeft.Count > 0 && playersInAttackRightToTheRight.Count > 0)
+    {
+        var turn = "L";
+        var turnedDirection = GetDirectionIfTurned(self, turn);
+        PlayerState closetPlayer = GetClosetPlayer(self, GetPlayersInDirection(self, model, turnedDirection));
+
+        switch (turnedDirection)
+        {
+            case "N":
+                if (closetPlayer.Direction != "S")
+                {
+                    return turn;
+                }
+                break;
+            case "S":
+                if (closetPlayer.Direction != "N")
+                {
+                    return turn;
+                }
+                break;
+            case "E":
+                if (closetPlayer.Direction != "W")
+                {
+                    return turn;
+                }
+                break;
+            case "W":
+                if (closetPlayer.Direction != "E")
+                {
+                    return turn;
+                }
+                break;
+        }
+
+        // If still not turned
+        turn = "R";
+        turnedDirection = GetDirectionIfTurned(self, turn);
+        closetPlayer = GetClosetPlayer(self, GetPlayersInDirection(self, model, turnedDirection));
+
+        switch (turnedDirection)
+        {
+            case "N":
+                if (closetPlayer.Direction != "S")
+                {
+                    return turn;
+                }
+                break;
+            case "S":
+                if (closetPlayer.Direction != "N")
+                {
+                    return turn;
+                }
+                break;
+            case "E":
+                if (closetPlayer.Direction != "W")
+                {
+                    return turn;
+                }
+                break;
+            case "W":
+                if (closetPlayer.Direction != "E")
+                {
+                    return turn;
+                }
+                break;
+        }
+    }
+    else if (playersInAttackRightToTheLeft.Count > 0)
+    {
+        return "L";
+    }
+    else if (playersInAttackRightToTheRight.Count > 0)
+    {
+        return "R";
+    }
+
+    return null;
+}
+
+List<PlayerState> GetPlayersInDirection(PlayerState self, ArenaUpdate model, string direction)
+{
+    switch (direction)
+    {
+        case "N":
+            return model.Arena.State.Where(p => p.Value.X == self.X && p.Value.Y < self.Y).Select(p => p.Value).ToList();
+        case "S":
+            return model.Arena.State.Where(p => p.Value.X == self.X && p.Value.Y > self.Y).Select(p => p.Value).ToList();
+        case "E":
+            return model.Arena.State.Where(p => p.Value.Y == self.Y && p.Value.X > self.X).Select(p => p.Value).ToList();
+        case "W":
+            return model.Arena.State.Where(p => p.Value.Y == self.Y && p.Value.X < self.X).Select(p => p.Value).ToList();
+    }
+
+    return null;
+}
+
+PlayerState GetClosetPlayer(PlayerState self, List<PlayerState> players)
+{
+    PlayerState closetPlayer = players[0];
+    foreach (PlayerState player in players)
+    {
+        var distance = Math.Abs((player.X + player.Y) - (self.X + self.Y));
+        var lastClosetPlayerDistance = Math.Abs((closetPlayer.X + closetPlayer.Y) - (self.X + self.Y));
+
+        if (distance < lastClosetPlayerDistance)
+        {
+            closetPlayer = player;
+        }
+    }
+
+    //switch (direction)
+    //{
+    //    case "N":
+    //        foreach (var player in players)
+    //        {
+    //            if (self.Y - player.Y < closetPlayer.Y)
+    //            {
+    //                closetPlayer = player;
+    //            }
+    //        }
+    //        break;
+
+    //    case "S":
+    //        foreach (var player in players)
+    //        {
+    //            if (player.Y - self.Y < closetPlayer.Y)
+    //            {
+    //                closetPlayer = player;
+    //            }
+    //        }
+    //        break;
+
+    //    case "E":
+    //        foreach (var player in players)
+    //        {
+    //            if (player.X - self.X < closetPlayer.X)
+    //            {
+    //                closetPlayer = player;
+    //            }
+    //        }
+    //        break;
+
+    //    case "W":
+    //        foreach (var player in players)
+    //        {
+    //            if (self.X - player.X < closetPlayer.X)
+    //            {
+    //                closetPlayer = player;
+    //            }
+    //        }
+    //        break;
+    //}
+
+    return closetPlayer;
+}
+
+List<PlayerState> GetPlayersInAttackRangeInDirection(string turnDirection)
+{
+
+}
 
 string GetDirectionIfTurned(PlayerState self, string turnDirection)
 {
