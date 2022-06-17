@@ -217,7 +217,7 @@ PlayerState GetClosetPlayer(PlayerState self, List<PlayerState> players)
 
 List<PlayerState> GetPlayersInAttackRangeInDirection(string turnDirection)
 {
-
+    return null;
 }
 
 string GetDirectionIfTurned(PlayerState self, string turnDirection)
