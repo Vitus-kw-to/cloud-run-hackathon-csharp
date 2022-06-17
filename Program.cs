@@ -50,7 +50,7 @@ app.MapPost("/", (ArenaUpdate model) =>
     }
 
     // Last Priority, random
-    return new string[] { "F", "L", "R" }[Random.Shared.Next(0, 3)];
+    return new string[] { "F", "L", "R" }[Random.Shared.Next(0, 2)];
 });
 
 app.Run($"http://0.0.0.0:{port}");
@@ -223,15 +223,16 @@ List<PlayerState> GetPlayersInAttackRangeInDirection(PlayerState self, ArenaUpda
     switch (dir)
     {
         case "N":
-            return model.Arena.State.Where(p => p.Value.X == self.X && p.Value.Y < self.Y).Select(p => p.Value).ToList();
+            return players.Where(p => p.X == self.X && self.Y - p.Y <= 3).ToList();
         case "S":
-            return model.Arena.State.Where(p => p.Value.X == self.X && p.Value.Y > self.Y).Select(p => p.Value).ToList();
+            return players.Where(p => p.X == self.X && p.Y - self.Y <= 3).ToList();
         case "E":
-            return model.Arena.State.Where(p => p.Value.Y == self.Y && p.Value.X > self.X).Select(p => p.Value).ToList();
+            return players.Where(p => p.Y == self.Y && p.X - self.X <= 3).ToList();
         case "W":
-            return model.Arena.State.Where(p => p.Value.Y == self.Y && p.Value.X < self.X).Select(p => p.Value).ToList();
+            return players.Where(p => p.Y == self.Y && self.X - p.X <= 3).ToList();
     }
-    return null;
+
+    return new List<PlayerState>();
 }
 
 string GetDirectionIfTurned(PlayerState self, string turnDirection)
