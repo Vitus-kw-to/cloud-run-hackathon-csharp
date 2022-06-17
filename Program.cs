@@ -9,12 +9,7 @@ app.MapPost("/", (ArenaUpdate model) =>
 {
     PlayerState self = GetSelf(model);
 
-    List<PlayerState> playersInAttackRange = GetAttackRangePlayers(self, model);
-    if (playersInAttackRange.Count > 0)
-    {
-        return "T";
-    }
-
+    // Priority 0
     List<PlayerState> threats = GetImmediateThreats(self, model);
     if (threats.Count() >= 2)
     {
@@ -38,6 +33,13 @@ app.MapPost("/", (ArenaUpdate model) =>
                 return "R";
             }
         }
+    }
+
+    // Priority 1
+    List<PlayerState> playersInAttackRange = GetAttackRangePlayers(self, model);
+    if (playersInAttackRange.Count > 0)
+    {
+        return "T";
     }
 
 
